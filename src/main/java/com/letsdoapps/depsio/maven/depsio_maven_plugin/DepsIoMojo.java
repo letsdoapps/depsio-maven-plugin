@@ -34,6 +34,14 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -53,9 +61,36 @@ public class DepsIoMojo extends AbstractMojo
     	assert(new File("pom.xml").exists());
     	
         try {
+    		// Create a trust manager that does not validate certificate chains
+    		TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
+    				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+    					return null;
+    				}
+    				public void checkClientTrusted(X509Certificate[] certs, String authType) {
+    				}
+    				public void checkServerTrusted(X509Certificate[] certs, String authType) {
+    				}
+    			}
+    		};
+
+    		// Install the all-trusting trust manager
+    		SSLContext sc = SSLContext.getInstance("SSL");
+    		sc.init(null, trustAllCerts, new java.security.SecureRandom());
+    		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+    		// Create all-trusting host name verifier
+    		HostnameVerifier allHostsValid = new HostnameVerifier() {
+    			public boolean verify(String hostname, SSLSession session) {
+    				return true;
+    			}
+    		};
+
+    		// Install the all-trusting host verifier
+    		HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        	
         	getLog().info("--- Deps.io : Updating pom.xml (appkey : " + appkey + ") ---");
             // Send the request
-            URL url = new URL("http://deps.io/api/v1/apps/" + appkey + "/update");
+            URL url = new URL("https://deps.io/api/v1/apps/" + appkey + "/update");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
             OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
