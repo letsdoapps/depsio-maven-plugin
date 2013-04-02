@@ -3,7 +3,7 @@
 
   <groupId>com.letsdoapps.depsio.maven</groupId>
   <artifactId>depsio-maven-plugin</artifactId>
-  <version>0.0.4-SNAPSHOT</version>
+  <version>0.0.4</version>
   <packaging>maven-plugin</packaging>
 
   <name>Deps.io Maven Plugin</name>
